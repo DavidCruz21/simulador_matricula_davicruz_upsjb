@@ -1,0 +1,5 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="stylesheet" href="styles.css"></head><body><div id="app"></div><div id="toast" class="toast"></div><script src="app.js"></script><script>
+chooseScenario('mixed'); chooseRequirements(true);
+const lower=courses.find(c=>c.id===MIXED_BASE_ID); lower.status='planned'; state.planner=[lower]; state.schedules[MIXED_BASE_ID]={theory:{...sections[0]},practical:{...practicalSections[0]}};
+state.selectedCourse=courses.find(c=>c.id===MIXED_COURSE_ID); state.selectedSection=null; state.selectedPractical=null; state.screen='sections'; render();
+</script></body></html>
