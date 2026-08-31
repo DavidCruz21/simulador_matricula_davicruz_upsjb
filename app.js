@@ -53,7 +53,7 @@ const initialCourses = [
 
   {id:'M_R_SIS2202020201', name:'ESTRUCTURAS DISCRETAS', credits:4, cycle:'02', status:'none'},
   {id:'M_R_SIS2202020301', name:'ARQUITECTURA DE COMPUTADORAS', credits:4, cycle:'02', status:'none'},
-  {id:'M_R_SIS2202020401', name:'BASES DE DATOS I', credits:4, cycle:'02', status:'none'},
+  {id:'M_R_SIS2202020401', name:'BASES DE DATOS I', credits:4, cycle:'02', status:'none', previouslyFailed:true},
   {id:'M_R_SIS2202030101', name:'ESTRUCTURAS DE DATOS Y ALGORITMOS', credits:4, cycle:'03', status:'none', prereqId:TARGET_ID},
   {id:'M_R_SIS2202030201', name:'REDES DE COMPUTADORAS I', credits:4, cycle:'03', status:'none'},
   {id:MIXED_COURSE_ID, name:'INGENIERÍA DE SOFTWARE I', credits:4, cycle:'04', status:'none', mixedExample:true}
@@ -68,6 +68,15 @@ function buildCoursesForScenario(scenario){
     base=base.filter(c=>!c.repeat);
     const lower=base.find(c=>c.id===MIXED_BASE_ID);
     if(lower) lower.status='none';
+    return base;
+  }
+  if(scenario==='change'){
+    // Caso especial: el alumno ya está inscrito y quiere cambiar de turno.
+    // Mostramos algunos cursos como inscritos; BASES DE DATOS I simula un
+    // curso que el alumno jaló anteriormente y que ahora está repitiendo.
+    base=base.filter(c=>!c.repeat && !c.mixedExample);
+    const enrolledIds=[TARGET_ID, MIXED_BASE_ID, 'M_R_SIS2202030201'];
+    base.forEach(c=>{ c.status=enrolledIds.includes(c.id)?'enrolled':(c.status==='done'?'done':'none'); });
     return base;
   }
   return base.filter(c=>!c.mixedExample);
@@ -137,7 +146,10 @@ const state = {
   mixedVirtualConflictSeen: false,
   blockedCourseId: null,
   enrollmentFilter: null,
-  failedScheduleMode: null
+  failedScheduleMode: null,
+  assistantHidden: false,
+  dropSelection: [],
+  dropBlockedCourseId: null
 };
 
 function icon(name, cls='') {
@@ -149,7 +161,8 @@ function icon(name, cls='') {
     gear: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5 21 12l-1.6-1.5.3-2.1-2.1-.7L16.3 6l-2 .8L12.8 5h-1.6L9.7 6.8 7.7 6l-1.3 1.7-2.1.7.3 2.1L3 12l1.6 1.5-.3 2.1 2.1.7L7.7 18l2-.8 1.5 1.8h1.6l1.5-1.8 2 .8 1.3-1.7 2.1-.7z"/></svg>`,
     person: `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="20" r="11"/><path d="M14 54c1.8-13 8.5-20 18-20s16.2 7 18 20z"/><path d="m18 16 14-8 14 8-14 8z"/><path d="M44 17v10"/></svg>`,
     arrowLeft: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>`,
-    chevron: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>`
+    chevron: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>`,
+    trash: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="m6 7 1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg>`
   };
   return `<span class="svg-icon ${cls}">${icons[name] || ''}</span>`;
 }
@@ -182,7 +195,7 @@ function resetGame(){
   Object.assign(state,{
     screen:'dashboard', navOpen:false, navExpanded:false, navLevel:'root', guided:true,
     selectedCourse:null, selectedSection:null, selectedPractical:null, planner:[], schedules:{}, justEnrolled:null, attemptedTargetBlocked:false,
-    requirementsUploaded:null, assistantNotice:null, mixedConflictSeen:false, mixedVirtualConflictSeen:false, blockedCourseId:null, enrollmentFilter:null, failedScheduleMode:null
+    requirementsUploaded:null, assistantNotice:null, mixedConflictSeen:false, mixedVirtualConflictSeen:false, blockedCourseId:null, enrollmentFilter:null, failedScheduleMode:null, assistantHidden:false, dropSelection:[], dropBlockedCourseId:null
   });
   render();
 }
@@ -191,12 +204,25 @@ function chooseScenario(type){
   state.scenario=type;
   courses=buildCoursesForScenario(type);
   const presetSchedules={};
+  if(type==='change'){
+    // Horarios ya inscritos para practicar Baja / cambio de turno.
+    presetSchedules[TARGET_ID]={theory:{...sections[1]},practical:{...practicalSections[1]}};
+    presetSchedules[MIXED_BASE_ID]={
+      theory:{id:'BD-TEO1',classNo:'4201',campus:'FILIAL ICA',room:'LAB. CÓMPUTO B-202',day:'Mar',start:'6:00PM',end:'7:30PM',teacher:'JOSÉ VEGA',open:true,modality:'PRESENCIAL'},
+      practical:{id:'BD-PRA1',classNo:'5201',campus:'FILIAL ICA',room:'LAB. CÓMPUTO B-204',day:'Jue',start:'6:00PM',end:'7:30PM',teacher:'ANA RÍOS',open:true}
+    };
+    presetSchedules['M_R_SIS2202030201']={
+      theory:{id:'RED-TEO1',classNo:'4301',campus:'FILIAL ICA',room:'AULA B-205',day:'Sáb',start:'9:00AM',end:'10:30AM',teacher:'LUIS MORA',open:true,modality:'PRESENCIAL'},
+      practical:{id:'RED-PRA1',classNo:'5301',campus:'FILIAL ICA',room:'LAB. REDES C-201',day:'Sáb',start:'10:45AM',end:'12:15PM',teacher:'SOFÍA LEÓN',open:true}
+    };
+  }
   Object.assign(state,{
     screen:'dashboard', navOpen:false, navExpanded:false, navLevel:'root',
     selectedCourse:null, selectedSection:null, selectedPractical:null,
     planner:[], schedules:presetSchedules, justEnrolled:null, attemptedTargetBlocked:false,
-    requirementsUploaded:null, assistantNotice:null, mixedConflictSeen:false, mixedVirtualConflictSeen:false,
-    blockedCourseId:null, enrollmentFilter:null, failedScheduleMode:type==='failed'?null:'available'
+    requirementsUploaded:type==='change'?true:null, assistantNotice:null, mixedConflictSeen:false, mixedVirtualConflictSeen:false,
+    blockedCourseId:null, enrollmentFilter:null, failedScheduleMode:type==='failed'?null:'available', assistantHidden:false,
+    dropSelection:[], dropBlockedCourseId:null
   });
   render();
 }
@@ -254,8 +280,8 @@ function assistantContext(){
   if(state.screen==='dashboard' && !state.scenario){
     return {
       title:'Hola, soy David Cruz de SAE',
-      message:'Te voy a enseñar el proceso de tu matrícula. Antes de empezar, elige el caso que quieres practicar:',
-      actions:`<button id="scenarioYes" class="assistant-btn warning-choice" onclick="chooseScenario('failed')">Jalé cursos</button><button id="scenarioNo" class="assistant-btn" onclick="chooseScenario('clean')">Aprobé todo</button><button id="scenarioMixed" class="assistant-btn mixed-choice" onclick="chooseScenario('mixed')">Llevo cursos de diferentes ciclos</button>`
+      message:'Te voy a enseñar el proceso de tu matrícula. Antes de empezar, elige el caso que quieres practicar. ¿Ya estás inscrito y quieres cambiarte de un curso seleccionado? Usa la opción de cambio de curso.',
+      actions:`<button id="scenarioYes" class="assistant-btn warning-choice" onclick="chooseScenario('failed')">Jalé cursos</button><button id="scenarioNo" class="assistant-btn" onclick="chooseScenario('clean')">Aprobé todo</button><button id="scenarioMixed" class="assistant-btn mixed-choice" onclick="chooseScenario('mixed')">Llevo cursos de diferentes ciclos</button><button id="scenarioChange" class="assistant-btn change-choice" onclick="chooseScenario('change')">Ya estoy inscrito · quiero cambiar un curso</button>`
     };
   }
   if(state.screen==='dashboard' && state.scenario==='failed' && state.failedScheduleMode===null){
@@ -286,7 +312,11 @@ function assistantContext(){
     };
   }
 
-  if(state.screen==='conditions') return {
+  if(state.screen==='conditions') return state.scenario==='change' ? {
+    title:'David · SAE',
+    message:'Como ya estás inscrito y quieres cambiar un curso, entra a la pestaña “Inscribir” y luego selecciona “Baja”. Ahí verás tus cursos inscritos. Si el curso que quieres cambiar de turno es uno que jalaste anteriormente, comunícate con SAE antes de hacer la baja.',
+    actions:''
+  } : {
     title:'David · SAE',
     message:'Aquí empiezas la matrícula. Pulsa “Cursos Disponibles” para revisar tu malla y los cursos que puedes planificar.',
     actions:''
@@ -333,6 +363,31 @@ function assistantContext(){
     ? {title:'David · SAE',message:'Este aviso aparece porque tienes cursos pendientes de ciclos inferiores y sus clases regulares están cerradas. Comunícate con tu coordinación para solicitar una matrícula administrativa; coordinación podrá inscribirte en la sección disponible que corresponda. Después podrás continuar con los cursos de ciclos superiores.',actions:''}
     : {title:'David · SAE',message:'Este aviso aparece porque tienes cursos pendientes de ciclos inferiores. Debes planificarlos e inscribirlos primero; luego podrás inscribir el curso del ciclo superior que ya dejaste en tu Planificador.',actions:''};
   if(state.screen==='prereqBlocked'){ const c=courses.find(x=>x.id===state.blockedCourseId); const pCourse=courses.find(x=>x.id===c?.prereqId); return {title:'David · SAE',message:`${c?.name||'Este curso'} tiene un prerrequisito. Primero debes inscribirte en ${pCourse?.name||'el curso prerrequisito'} para poder llevarlo.`,actions:''}; }
+  if(state.screen==='enrollHome') return {
+    title:'David · SAE',
+    message:'Ya estás inscrito. Para cambiarte de turno, primero entra a “Baja”. Selecciona el curso que deseas retirar y continúa. Si ese curso lo jalaste anteriormente y ahora lo estás repitiendo, no cambies el turno por tu cuenta: comunícate con SAE.',
+    actions:''
+  };
+  if(state.screen==='drop') return {
+    title:'David · SAE',
+    message:'Marca el curso que deseas cambiar y pulsa “Baja Clases Seleccionadas”. Recuerda: si el curso fue jalado anteriormente, comunícate con SAE para que te orienten con el cambio de turno.',
+    actions:''
+  };
+  if(state.screen==='dropConfirm') return {
+    title:'David · SAE',
+    message:'Revisa la clase seleccionada para baja. Si todo es correcto, pulsa “Finalizar Baja”. Después podrás volver a seleccionar el curso y elegir otro horario disponible.',
+    actions:''
+  };
+  if(state.screen==='dropBlocked') return {
+    title:'David · SAE',
+    message:'Este curso fue jalado anteriormente y ahora lo estás repitiendo. Si deseas cambiarte de turno, comunícate con el área de SAE para que revisen tu caso antes de realizar una baja.',
+    actions:''
+  };
+  if(state.screen==='enrollReview') return {
+    title:'David · SAE',
+    message:'Antes de continuar puedes revisar los cursos planificados. Si ya no deseas llevar alguno, usa el icono del tacho para eliminarlo del Planificador. Luego pulsa “Continuar paso 2 de 3”.',
+    actions:''
+  };
   if(state.screen==='enroll') return {
     title:'David · SAE · Recomendación',
     message:'Inscríbete según tu malla curricular y los créditos otorgados. Si no sabes cuántos créditos tienes, comunícate con SAE o revisa tu malla curricular. Los créditos se asignan según el ciclo en el que te encuentras y los cursos de ciclos inferiores que tengas pendientes. Si te sobran créditos o un curso está lleno, se recomienda escoger cursos electivos.',
@@ -343,14 +398,26 @@ function assistantContext(){
 
 function assistantWidget(){
   const info=assistantContext();
-  return `<section class="sae-assistant ${state.navOpen?'nav-open':''}" aria-live="polite">
+  return `<section class="sae-assistant ${state.navOpen?'nav-open':''} ${state.assistantHidden?'assistant-hidden':''}" aria-live="polite">
     <div class="sae-photo-wrap"><img class="sae-photo" src="assets/david_sae.png" alt="David Cruz de SAE"></div>
     <div class="sae-bubble">
+      <button class="sae-close" aria-label="Cerrar asistente" title="Cerrar por un momento" onclick="hideAssistant(event)">×</button>
       <div class="sae-title">${info.title}</div>
       <div id="assistantMessage" class="sae-message">${info.message}</div>
       ${info.actions?`<div class="assistant-actions">${info.actions}</div>`:''}
     </div>
   </section>`;
+}
+
+function hideAssistant(event){
+  event?.stopPropagation();
+  state.assistantHidden=true;
+  document.querySelector('.sae-assistant')?.classList.add('assistant-hidden');
+}
+function restoreAssistant(){
+  if(!state.assistantHidden) return;
+  state.assistantHidden=false;
+  document.querySelector('.sae-assistant')?.classList.remove('assistant-hidden');
 }
 
 function tile(title,iconPath,warning,onclick){
@@ -696,6 +763,99 @@ function prerequisiteBlockedPage(){
   `, 'Introducción de Clase', 'inicio');
 }
 
+function enrolledCourses(){ return courses.filter(c=>c.status==='enrolled'); }
+
+function enrollHomePage(){
+  const rows=enrolledCourses().map(c=>{
+    const sch=state.schedules[c.id]||{};
+    const t=sch.theory, p=sch.practical;
+    return `<tr><td>${c.id}</td><td>${c.name}</td><td>${t?`${t.day} ${t.start} - ${t.end}`:'—'}${p?`<br>${p.day} ${p.start} - ${p.end}`:''}</td><td>${t?.room||'—'}${p?`<br>${p.room}`:''}</td><td>${t?.teacher||'—'}${p?`<br>${p.teacher}`:''}</td><td>${c.credits.toFixed(2)}</td><td><span class="status-check">✓</span></td></tr>`;
+  }).join('');
+  return classicFrame(`${studentTabs('enroll')}
+    <div class="enroll-subnav"><b>Añadir</b><span>|</span><button id="bajaNav" class="subnav-link" onclick="openDropStep()">Baja</button><span>|</span><span>Cambiar</span><span>|</span><span>Editar</span><span>|</span><span>Información Ciclo</span></div>
+    <div class="page-heading-row"><h1 class="section-title compact-title">Introducción de Clase</h1><div class="step-indicator"><span class="step active">1</span><span class="step">2</span><span class="step">3</span></div></div>
+    <section class="enrollment-panel">
+      <h2>1. Selección de Clases para Añadir</h2>
+      <p>Ya tienes clases inscritas en el ciclo ${STUDENT.term}. Si deseas cambiarte de turno, utiliza la opción <b>Baja</b> de la barra superior.</p>
+      <p class="term-line"><b>${STUDENT.term} | ${STUDENT.career} | ${STUDENT.institution}</b></p>
+      <div class="mini-box"><div class="mini-title">Mi Horario de Clases ${STUDENT.term}</div><table class="course-table"><thead><tr><th>Clase</th><th>Descripción</th><th>Días/Horas</th><th>Aula</th><th>Instructor</th><th>Unidades</th><th>Estado</th></tr></thead><tbody>${rows||'<tr><td colspan="7">No hay clases inscritas.</td></tr>'}</tbody></table></div>
+    </section>
+  `, 'Introducción de Clase', 'inicio');
+}
+
+function enrollReviewPage(){
+  const pendingRepeats=pendingFailedCourses();
+  const regularizationMode=state.scenario==='failed' && pendingRepeats.length>0;
+  const planned=state.planner.filter(c=>c.status==='planned');
+  const rows=planned.map(c=>{
+    const sch=state.schedules[c.id]||{}, t=sch.theory, p=sch.practical;
+    const note=regularizationMode && !c.repeat ? '<div class="row-note">Se mantendrá planificado hasta regularizar cursos inferiores.</div>' : '';
+    return `<tr><td>${c.id}</td><td>${c.name}${note}</td><td>${t?`${t.day} ${t.start} - ${t.end} · ${t.room}`:'—'}</td><td>${p?`${p.day} ${p.start} - ${p.end} · ${p.room}`:'—'}</td><td>${c.credits.toFixed(2)}</td><td><span class="status-star">★</span> Planificado</td><td class="trash-cell"><button class="trash-btn" title="Eliminar del Planificador" aria-label="Eliminar ${c.name} del Planificador" onclick="removePlannedCourse('${c.id}')">${icon('trash')}</button></td></tr>`;
+  }).join('');
+  return classicFrame(`${studentTabs('enroll')}
+    <div class="enroll-subnav"><b>Añadir</b><span>|</span><button class="subnav-link" onclick="openDropStep()">Baja</button><span>|</span><span>Cambiar</span><span>|</span><span>Editar</span><span>|</span><span>Información Ciclo</span></div>
+    <div class="page-heading-row"><h1 class="section-title compact-title">Inscribir Clases</h1><div class="step-indicator"><span class="step active">1</span><span class="step">2</span><span class="step">3</span></div></div>
+    <section class="enrollment-panel enroll-confirm-panel">
+      <h2>1. Selección de clases para inscribir</h2>
+      <p>Revisa tus cursos planificados. Puedes eliminar cualquiera antes de continuar.</p>
+      <p class="term-line"><b>${STUDENT.term} | ${STUDENT.career} | ${STUDENT.institution}</b></p>
+      <div class="mini-box"><table class="course-table"><thead><tr><th>Curso</th><th>Descripción</th><th>Teoría</th><th>Práctica</th><th>Unidades</th><th>Estado</th><th>Eliminar</th></tr></thead><tbody>${rows||'<tr><td colspan="7">No hay cursos planificados.</td></tr>'}</tbody></table></div>
+      <div class="footer-actions"><button class="action-button" onclick="showCourses()">Volver</button><button id="continueEnrollBtn" class="action-button primary" ${planned.length?'':'disabled'} onclick="continueEnrollment()">Continuar paso 2 de 3</button></div>
+    </section>
+  `, 'Introducción de Clase', 'inicio');
+}
+
+function dropPage(){
+  const enrolled=enrolledCourses();
+  const rows=enrolled.map(c=>{
+    const sch=state.schedules[c.id]||{}, t=sch.theory, p=sch.practical;
+    const checked=state.dropSelection.includes(c.id)?'checked':'';
+    return `<tr class="drop-course-row"><td class="drop-check"><input id="dropCheck_${safeId(c.id)}" type="checkbox" ${checked} onchange="toggleDropCourse('${c.id}',this.checked)"></td><td>${c.id}</td><td>${c.name}</td><td>${t?`${t.day} ${t.start} - ${t.end}`:'—'}${p?`<br>${p.day} ${p.start} - ${p.end}`:''}</td><td>${t?.room||'—'}${p?`<br>${p.room}`:''}</td><td>${t?.teacher||'—'}${p?`<br>${p.teacher}`:''}</td><td>${c.credits.toFixed(2)}</td><td><span class="status-check">✓</span></td></tr>`;
+  }).join('');
+  return classicFrame(`${studentTabs('enroll')}
+    <div class="enroll-subnav"><span>Añadir</span><span>|</span><b>Baja</b><span>|</span><span>Cambiar</span><span>|</span><span>Editar</span><span>|</span><span>Información Ciclo</span></div>
+    <div class="page-heading-row"><h1 class="section-title compact-title">Baja de Clase</h1><div class="step-indicator"><span class="step active">1</span><span class="step">2</span><span class="step">3</span></div></div>
+    <section class="enrollment-panel">
+      <h2>1. Clases para Baja</h2>
+      <p>Selecciona las clases en las que deseas causar baja y pulsa “Baja Clases Seleccionadas”.</p>
+      <p class="term-line"><b>${STUDENT.term} | ${STUDENT.career} | ${STUDENT.institution}</b></p>
+      <div class="mini-box"><table class="course-table drop-table"><thead><tr><th>Selección</th><th>Clase</th><th>Descripción</th><th>Días/Horas</th><th>Aula</th><th>Instructor</th><th>Unidades</th><th>Estado</th></tr></thead><tbody>${rows||'<tr><td colspan="8">No hay clases inscritas.</td></tr>'}</tbody></table></div>
+      <div class="footer-actions"><button class="action-button" onclick="openEnrollStep()">Volver</button><button id="dropSelectedBtn" class="action-button primary" ${state.dropSelection.length?'':'disabled'} onclick="prepareDrop()">Baja Clases Seleccionadas</button></div>
+    </section>
+  `, 'Baja de Clase', 'inicio');
+}
+
+function dropConfirmPage(){
+  const selected=state.dropSelection.map(id=>courses.find(c=>c.id===id)).filter(Boolean);
+  const rows=selected.map(c=>{
+    const sch=state.schedules[c.id]||{}, t=sch.theory, p=sch.practical;
+    return `<tr><td>${c.id}</td><td>${c.name}</td><td>${t?`${t.day} ${t.start} - ${t.end} · ${t.room}`:'—'}</td><td>${p?`${p.day} ${p.start} - ${p.end} · ${p.room}`:'—'}</td><td>${c.credits.toFixed(2)}</td></tr>`;
+  }).join('');
+  return classicFrame(`${studentTabs('enroll')}
+    <div class="enroll-subnav"><span>Añadir</span><span>|</span><b>Baja</b><span>|</span><span>Cambiar</span><span>|</span><span>Editar</span><span>|</span><span>Información Ciclo</span></div>
+    <div class="page-heading-row"><h1 class="section-title compact-title">Baja de Clase</h1><div class="step-indicator"><span class="step">1</span><span class="step active">2</span><span class="step">3</span></div></div>
+    <section class="enrollment-panel enroll-confirm-panel">
+      <h2>2. Confirmación de clases para baja</h2>
+      <p>Revisa las clases seleccionadas. La baja se aplicará cuando pulses “Finalizar Baja”.</p>
+      <div class="mini-box"><table class="course-table"><thead><tr><th>Curso</th><th>Descripción</th><th>Teoría</th><th>Práctica</th><th>Unidades</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="footer-actions"><button class="action-button" onclick="openDropStep()">Anterior</button><button id="finalDropBtn" class="action-button primary" onclick="finalizeDrop()">Finalizar Baja</button></div>
+    </section>
+  `, 'Baja de Clase', 'inicio');
+}
+
+function dropBlockedPage(){
+  const c=courses.find(x=>x.id===state.dropBlockedCourseId);
+  return classicFrame(`${studentTabs('enroll')}
+    <div class="enroll-subnav"><span>Añadir</span><span>|</span><b>Baja</b><span>|</span><span>Cambiar</span><span>|</span><span>Editar</span><span>|</span><span>Información Ciclo</span></div>
+    <h1 class="section-title compact-title">Cambio de turno</h1>
+    <section class="enrollment-panel enroll-confirm-panel">
+      <h2>Atención SAE</h2>
+      <div class="requirements-warning"><b>${c?.name||'Este curso'} fue jalado anteriormente.</b><br>Si deseas cambiar el turno de este curso mientras lo estás repitiendo, comunícate con el área de <b>SAE</b> para que revisen tu caso y te indiquen el procedimiento correcto.</div>
+      <div class="footer-actions"><button id="dropBlockedBackBtn" class="action-button primary" onclick="openDropStep()">Volver a Baja</button></div>
+    </section>
+  `, 'Baja de Clase', 'inicio');
+}
+
 function enrollPage(){
   const pendingRepeats=pendingFailedCourses();
   const regularizationMode = state.scenario==='failed' && pendingRepeats.length>0;
@@ -715,7 +875,7 @@ function enrollPage(){
       <p>${regularizationMode?'Confirma primero la inscripción de los cursos pendientes de ciclos inferiores. El curso de ciclo superior que ya planificaste permanecerá en tu Planificador.':state.enrollmentFilter?'Este curso debe inscribirse primero porque es prerrequisito de otra asignatura que dejaste en el Planificador.':'Los cursos están en tu Planificador. Confirma la inscripción para registrarlos en el ciclo '+STUDENT.term+'.'}</p>
       <p class="term-line"><b>${STUDENT.term} | ${STUDENT.career} | ${STUDENT.institution}</b></p>
       <div class="mini-box"><table class="course-table"><thead><tr><th>Curso</th><th>Descripción</th><th>Teoría</th><th>Práctica</th><th>Unidades</th><th>Estado actual</th></tr></thead><tbody>${rows}</tbody></table></div>
-      <div class="footer-actions"><button class="action-button" onclick="showCourses()">Anterior</button><button id="enrollConfirmBtn" class="action-button primary" onclick="finishEnrollment()">Inscribir</button></div>
+      <div class="footer-actions"><button class="action-button" onclick="showCourses()">Anterior</button><button id="enrollConfirmBtn" class="action-button primary" onclick="finishEnrollment()">Finalizar inscripción</button></div>
     </section>
   `, 'Introducción de Clase', 'inicio');
 }
@@ -733,7 +893,12 @@ function render(){
     case 'practical': app.innerHTML=coursesPage()+practicalModal(); break;
     case 'enrollBlocked': app.innerHTML=enrollBlockedPage(); break;
     case 'prereqBlocked': app.innerHTML=prerequisiteBlockedPage(); break;
+    case 'enrollHome': app.innerHTML=enrollHomePage(); break;
+    case 'enrollReview': app.innerHTML=enrollReviewPage(); break;
     case 'enroll': app.innerHTML=enrollPage(); break;
+    case 'drop': app.innerHTML=dropPage(); break;
+    case 'dropConfirm': app.innerHTML=dropConfirmPage(); break;
+    case 'dropBlocked': app.innerHTML=dropBlockedPage(); break;
     default: app.innerHTML=dashboard();
   }
   setTimeout(applyGuide,40);
@@ -755,7 +920,7 @@ function nextGuideTarget(){
     if(state.navLevel==='autoservicio') return 'navProgreso';
     if(state.navLevel==='progress') return 'navInicioMatricula';
   }
-  if(state.screen==='conditions') return 'coursesBtn';
+  if(state.screen==='conditions') return state.scenario==='change'?'enrollTab':'coursesBtn';
   if(state.screen==='courses'){
     if(state.scenario==='mixed'){
       const lower=courses.find(c=>c.id===MIXED_BASE_ID);
@@ -804,6 +969,11 @@ function nextGuideTarget(){
   if(state.screen==='practical') return state.selectedPractical?'practicalNextBtn':'practicalSelect3101';
   if(state.screen==='enrollBlocked') return 'regularizeBtn';
   if(state.screen==='prereqBlocked') return 'prereqBackBtn';
+  if(state.screen==='enrollHome') return 'bajaNav';
+  if(state.screen==='enrollReview') return 'continueEnrollBtn';
+  if(state.screen==='drop'){ const first=enrolledCourses().find(c=>!c.previouslyFailed)||enrolledCourses()[0]; return state.dropSelection.length?'dropSelectedBtn':(first?`dropCheck_${safeId(first.id)}`:null); }
+  if(state.screen==='dropConfirm') return 'finalDropBtn';
+  if(state.screen==='dropBlocked') return 'dropBlockedBackBtn';
   if(state.screen==='enroll') return 'enrollConfirmBtn';
   return null;
 }
@@ -942,15 +1112,40 @@ function confirmPractical(){
 function openEnrollStep(){
   clearAssistantNotice();
   state.enrollmentFilter=null;
+  const planned=state.planner.filter(c=>c.status==='planned');
+  if(state.scenario==='change' && !planned.length){
+    state.screen='enrollHome'; render(); return;
+  }
   if(state.requirementsUploaded!==true){ toast('La inscripción no está disponible hasta que tus requisitos estén cargados en el Intranet'); return; }
+  if(!planned.length && enrolledCourses().length){ state.screen='enrollHome'; render(); return; }
+  if(!planned.length){ toast('Primero selecciona horarios y añade al menos un curso al Planificador'); return; }
+  state.screen='enrollReview'; render();
+}
+
+function removePlannedCourse(id){
+  clearAssistantNotice();
+  const c=courses.find(x=>x.id===id); if(!c) return;
+  c.status=c.repeat?'failed':'none';
+  state.planner=state.planner.filter(x=>x.id!==id);
+  delete state.schedules[id];
+  if(state.selectedCourse?.id===id){ state.selectedCourse=null; state.selectedSection=null; state.selectedPractical=null; }
+  toast(`${c.name} eliminado del Planificador`);
+  state.screen='enrollReview'; render();
+}
+
+function continueEnrollment(){
+  clearAssistantNotice();
+  if(state.requirementsUploaded!==true){ toast('Primero debes subir tus requisitos al Intranet'); return; }
+  const planned=state.planner.filter(c=>c.status==='planned');
+  if(!planned.length){ toast('No hay cursos planificados para continuar'); return; }
+  state.enrollmentFilter=null;
   if(state.scenario==='failed' && pendingFailedCourses().length){
     if(targetCourse()?.status==='planned') state.attemptedTargetBlocked=true;
     const unplanned=failedUnplannedCourses();
     if(unplanned.length){ state.screen='enrollBlocked'; render(); return; }
+    state.enrollmentFilter=FAILED_IDS.slice();
     state.screen='enroll'; render(); return;
   }
-  const planned=state.planner.filter(c=>c.status==='planned');
-  if(!planned.length){ toast('Primero selecciona horarios y añade al menos un curso al Planificador'); return; }
   const blocked=planned.find(c=>c.prereqId && courses.find(p=>p.id===c.prereqId)?.status!=='enrolled');
   if(blocked){
     const prereq=courses.find(p=>p.id===blocked.prereqId);
@@ -959,10 +1154,46 @@ function openEnrollStep(){
       state.assistantNotice=`Primero inscribe ${prereq.name}. ${blocked.name} permanecerá en el Planificador hasta que cumplas el prerrequisito.`;
       state.screen='enroll'; render(); return;
     }
-    state.blockedCourseId=blocked.id;
-    state.screen='prereqBlocked'; render(); return;
+    state.blockedCourseId=blocked.id; state.screen='prereqBlocked'; render(); return;
   }
   state.screen='enroll'; render();
+}
+
+function openDropStep(){
+  clearAssistantNotice();
+  if(!enrolledCourses().length){ toast('No tienes cursos inscritos para dar de baja'); return; }
+  state.dropSelection=[];
+  state.dropBlockedCourseId=null;
+  state.screen='drop'; render();
+}
+function toggleDropCourse(id,checked){
+  if(checked){ if(!state.dropSelection.includes(id)) state.dropSelection.push(id); }
+  else state.dropSelection=state.dropSelection.filter(x=>x!==id);
+  const btn=document.getElementById('dropSelectedBtn'); if(btn) btn.disabled=!state.dropSelection.length;
+  clearHighlights();
+  setTimeout(applyGuide,0);
+}
+function prepareDrop(){
+  clearAssistantNotice();
+  if(!state.dropSelection.length){ toast('Selecciona al menos un curso para la baja'); return; }
+  const protectedCourse=state.dropSelection.map(id=>courses.find(c=>c.id===id)).find(c=>c?.previouslyFailed);
+  if(protectedCourse){
+    state.dropBlockedCourseId=protectedCourse.id;
+    state.screen='dropBlocked'; render(); return;
+  }
+  state.screen='dropConfirm'; render();
+}
+function finalizeDrop(){
+  clearAssistantNotice();
+  const ids=new Set(state.dropSelection);
+  ids.forEach(id=>{
+    const c=courses.find(x=>x.id===id);
+    if(c){ c.status='none'; delete state.schedules[id]; }
+  });
+  state.dropSelection=[];
+  state.dropBlockedCourseId=null;
+  state.assistantNotice='Baja finalizada. Ahora puedes volver a seleccionar el curso y escoger otro horario disponible para completar el cambio de turno.';
+  state.screen='courses'; render();
 }
 
 function finishEnrollment(){
@@ -997,6 +1228,15 @@ function finishEnrollment(){
 }
 
 function toggleGuide(){ state.guided=!state.guided; render(); }
+
+// Si David se cerró porque tapaba un control, reaparece automáticamente al
+// pulsar el siguiente botón/enlace/opción del simulador.
+document.addEventListener('click',(event)=>{
+  if(!state.assistantHidden) return;
+  if(event.target.closest('.sae-close')) return;
+  const interactive=event.target.closest('button,a,input,.course-link,.select-link,.rail-item,.nav-row,.action-button');
+  if(interactive) restoreAssistant();
+},true);
 
 window.addEventListener('resize',()=>setTimeout(applyGuide,50));
 render();
