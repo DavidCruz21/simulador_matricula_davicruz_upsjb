@@ -403,12 +403,14 @@ function assistantWidget(){
   const info=assistantContext();
   const assistantImage=state.assistantAltImage?'assets/david_sae_click5.png':'assets/david_sae.png';
   return `<section class="sae-assistant ${state.navOpen?'nav-open':''} ${state.assistantHidden?'assistant-hidden':''}" style="--sae-scale:${state.assistantScale||1}" aria-live="polite">
-    <div class="sae-photo-wrap" onclick="assistantGrow(event)" title="En PC, haz clic en David para ampliar la guía"><img class="sae-photo" src="${assistantImage}" alt="David Cruz de SAE"></div>
-    <div class="sae-bubble">
-      <button class="sae-close" aria-label="Cerrar asistente" title="Cerrar por un momento" onclick="hideAssistant(event)">×</button>
-      <div class="sae-title">${info.title}</div>
-      <div id="assistantMessage" class="sae-message">${info.message}</div>
-      ${info.actions?`<div class="assistant-actions">${info.actions}</div>`:''}
+    <div class="sae-assistant-inner">
+      <div class="sae-photo-wrap" onclick="assistantGrow(event)" title="En PC, haz clic en David para ampliar la guía"><img class="sae-photo" src="${assistantImage}" alt="David Cruz de SAE"></div>
+      <div class="sae-bubble">
+        <button class="sae-close" aria-label="Cerrar asistente" title="Cerrar por un momento" onclick="hideAssistant(event)">×</button>
+        <div class="sae-title">${info.title}</div>
+        <div id="assistantMessage" class="sae-message">${info.message}</div>
+        ${info.actions?`<div class="assistant-actions">${info.actions}</div>`:''}
+      </div>
     </div>
   </section>`;
 }

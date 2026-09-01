@@ -512,13 +512,16 @@ tr.highlight-target{
   right:18px;
   bottom:18px;
   z-index:220;
-  display:flex;
-  align-items:flex-end;
-  gap:10px;
   width:min(520px,calc(100vw - 36px));
   pointer-events:none;
 }
 .sae-assistant.nav-open{right:auto;left:18px}
+.sae-assistant-inner{
+  display:flex;
+  align-items:flex-end;
+  gap:10px;
+  width:100%;
+}
 .sae-photo-wrap{
   width:104px;
   height:126px;
@@ -615,6 +618,7 @@ tr.highlight-target{
   display:block;
   filter:drop-shadow(0 5px 7px rgba(0,0,0,.24));
 }
+.sae-assistant-inner,.sae-photo-wrap,.sae-photo,.sae-bubble{overflow:visible}
 .assistant-btn.mixed-choice{
   border-color:#5f7ea5;
   background:linear-gradient(#f7fbff,#dce9f6);
@@ -783,18 +787,18 @@ tr.highlight-target{
 
 /* V17 · interacción del asistente en escritorio */
 @media(min-width:761px){
-  .sae-assistant{
+  .sae-assistant-inner{
     transform:scale(var(--sae-scale,1));
     transform-origin:right bottom;
     transition:transform .2s ease;
     will-change:transform;
   }
-  .sae-assistant.nav-open{transform-origin:left bottom}
+  .sae-assistant.nav-open .sae-assistant-inner{transform-origin:left bottom}
   .sae-photo-wrap{cursor:zoom-in;user-select:none}
   .sae-photo-wrap:active{cursor:zoom-out}
 }
 @media(max-width:760px){
-  .sae-assistant,.sae-assistant.nav-open{transform:none!important}
+  .sae-assistant-inner{transform:none!important}
   .sae-photo-wrap{cursor:default}
 }
 
