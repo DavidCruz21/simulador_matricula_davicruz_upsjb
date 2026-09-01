@@ -321,28 +321,50 @@ button:focus-visible,[role="button"]:focus-visible{outline:3px solid #f4d55f;out
 .section-select-btn:hover{filter:brightness(.97)}
 .closed-label{color:#777;font-size:11px}
 
-/* Indicador visual del siguiente control: solo resalta, sin globos ni paneles */
+/* Indicador visual del siguiente control: amarillo INTENSO intermitente.
+   Se apaga y se enciende claramente para guiar al alumno sin mostrar globos de ayuda. */
 .highlight-target{
   position:relative;
   z-index:160!important;
-  outline:3px solid #ffd54f!important;
-  outline-offset:3px;
-  box-shadow:0 0 0 1px rgba(158,112,0,.9),0 0 0 7px rgba(255,213,79,.22),0 0 20px rgba(255,197,0,.48)!important;
-  animation:nextTargetGlow 1.05s ease-in-out infinite!important;
-  filter:saturate(1.12) brightness(1.03);
+  outline:5px solid transparent!important;
+  outline-offset:4px;
+  box-shadow:none!important;
+  animation:nextTargetBlink .82s steps(1,end) infinite!important;
 }
 button.highlight-target,.nav-row.highlight-target,.rail-item.highlight-target,.tree-link.highlight-target,.back-link.highlight-target{
   transform:translateZ(0);
 }
 tr.highlight-target{
-  outline-offset:-2px;
-  background:#fff9cf!important;
+  outline-offset:-3px;
+  animation:nextTargetBlink .82s steps(1,end) infinite, nextRowBlink .82s steps(1,end) infinite!important;
 }
 .selectable-practical{cursor:pointer}
 .selectable-practical:hover{background:#fffbe8}
-@keyframes nextTargetGlow{
-  0%,100%{box-shadow:0 0 0 1px rgba(158,112,0,.9),0 0 0 5px rgba(255,213,79,.16),0 0 12px rgba(255,197,0,.32)}
-  50%{box-shadow:0 0 0 1px rgba(158,112,0,.95),0 0 0 10px rgba(255,213,79,.26),0 0 25px rgba(255,197,0,.62)}
+@keyframes nextTargetBlink{
+  0%,46%{
+    outline-color:#ffea00!important;
+    box-shadow:
+      0 0 0 3px #ffb300,
+      0 0 0 8px rgba(255,234,0,.96),
+      0 0 24px 10px rgba(255,214,0,.88),
+      0 0 48px 18px rgba(255,193,7,.58)!important;
+    filter:saturate(1.55) brightness(1.22) contrast(1.06);
+  }
+  47%,100%{
+    outline-color:transparent!important;
+    box-shadow:none!important;
+    filter:none;
+  }
+}
+@keyframes nextRowBlink{
+  0%,46%{
+    background:#ffea00!important;
+    color:#2f2800!important;
+  }
+  47%,100%{
+    background:inherit!important;
+    color:inherit!important;
+  }
 }
 
 /* V7 · Escenario de regularización por cursos desaprobados */
@@ -756,4 +778,334 @@ tr.highlight-target{
   .trash-cell{width:44px}
   .trash-btn{width:26px;height:25px}
   .enroll-subnav{flex-wrap:wrap}
+}
+
+
+/* V17 · interacción del asistente en escritorio */
+@media(min-width:761px){
+  .sae-assistant{
+    transform:scale(var(--sae-scale,1));
+    transform-origin:right bottom;
+    transition:transform .2s ease;
+    will-change:transform;
+  }
+  .sae-assistant.nav-open{transform-origin:left bottom}
+  .sae-photo-wrap{cursor:zoom-in;user-select:none}
+  .sae-photo-wrap:active{cursor:zoom-out}
+}
+@media(max-width:760px){
+  .sae-assistant,.sae-assistant.nav-open{transform:none!important}
+  .sae-photo-wrap{cursor:default}
+}
+
+/* V19 · indicador automático más visible: amarillo neón + borde amarillo/naranjoso.
+   No requiere hover: cualquier elemento con .highlight-target parpadea por sí solo. */
+.highlight-target{
+  position:relative!important;
+  z-index:170!important;
+  outline:4px solid #ff8a00!important;
+  outline-offset:4px!important;
+  border-color:#ff9800!important;
+  animation:targetNeonBlink .72s ease-in-out infinite!important;
+  box-shadow:0 0 0 2px #ffb300, 0 0 16px 5px rgba(255,215,0,.75)!important;
+}
+tr.highlight-target{
+  outline:4px solid #ff8a00!important;
+  outline-offset:-3px!important;
+  animation:targetNeonBlink .72s ease-in-out infinite, targetRowNeonBlink .72s ease-in-out infinite!important;
+}
+@keyframes targetNeonBlink{
+  0%,100%{
+    outline-color:#ff8a00!important;
+    border-color:#ff9800!important;
+    background-color:#fff200!important;
+    box-shadow:
+      0 0 0 2px #ff9800,
+      0 0 0 5px #ffd000,
+      0 0 18px 7px rgba(255,238,0,.98),
+      0 0 36px 12px rgba(255,153,0,.72)!important;
+    filter:brightness(1.20) saturate(1.5)!important;
+  }
+  50%{
+    outline-color:#ffb300!important;
+    border-color:#ffb300!important;
+    background-color:#fffde0!important;
+    box-shadow:
+      0 0 0 1px rgba(255,152,0,.78),
+      0 0 8px 2px rgba(255,193,7,.42)!important;
+    filter:brightness(1.02) saturate(1.08)!important;
+  }
+}
+@keyframes targetRowNeonBlink{
+  0%,100%{
+    background:#fff200!important;
+    color:#332400!important;
+  }
+  50%{
+    background:#fffbe0!important;
+    color:inherit!important;
+  }
+}
+
+/* El resaltado no depende del mouse. El hover solo conserva la visibilidad. */
+.highlight-target:hover{
+  outline-color:#ff8a00!important;
+}
+
+/* V20 · guía visual: destello amarillo saturado + "serpiente" roja animada.
+   El resaltado se activa solo con .highlight-target; NO depende de :hover. */
+@property --snake-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.highlight-target{
+  position:relative!important;
+  z-index:180!important;
+  outline:0!important;
+  border-color:transparent!important;
+  box-shadow:none!important; /* elimina por completo el borde/halo naranja de versiones anteriores */
+  overflow:visible!important;
+  isolation:isolate;
+  animation:none!important;
+}
+
+/* Destello amarillo muy saturado: se enciende y apaga solo, sin hover. */
+.highlight-target::before{
+  content:"";
+  position:absolute;
+  pointer-events:none;
+  z-index:1;
+  inset:-4px;
+  border-radius:6px;
+  background:rgba(255,235,0,.42);
+  box-shadow:
+    0 0 0 5px rgba(255,239,0,1),
+    0 0 15px 9px rgba(255,230,0,1),
+    0 0 34px 17px rgba(255,215,0,.92),
+    0 0 52px 23px rgba(255,225,0,.48),
+    inset 0 0 17px rgba(255,247,0,.78);
+  opacity:0;
+  animation:targetYellowBlinkV20 .78s steps(1,end) infinite!important;
+}
+
+/* Una sola "serpiente" roja luminosa da vueltas alrededor del elemento. */
+.highlight-target::after{
+  content:"";
+  position:absolute;
+  pointer-events:none;
+  z-index:3;
+  inset:-8px;
+  padding:3px;
+  border-radius:8px;
+  background:conic-gradient(
+    from var(--snake-angle),
+    transparent 0deg 257deg,
+    rgba(99,0,255,.08) 268deg,
+    #ff1f1f 280deg,
+    #ff3030 296deg,
+    #ff4949 313deg,
+    #ff6b6b 325deg,
+    #ff2b2b 340deg,
+    transparent 354deg 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask-composite:exclude;
+  filter:
+    drop-shadow(0 0 2px #ff1616)
+    drop-shadow(0 0 6px rgba(255,35,35,1))
+    drop-shadow(0 0 10px rgba(255,20,20,.65));
+  animation:targetSnakeOrbitV20 1.08s linear infinite!important;
+}
+
+@keyframes targetYellowBlinkV20{
+  0%,43%{opacity:1}
+  44%,100%{opacity:0}
+}
+
+@keyframes targetSnakeOrbitV20{
+  to{--snake-angle:360deg}
+}
+
+/* Filas completas: amarillo saturado intermitente + segmentos rojos en movimiento
+   por los cuatro lados como respaldo, ya que ::before/::after en <tr> no es consistente. */
+tr.highlight-target{
+  outline:0!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  background-image:
+    repeating-linear-gradient(90deg,#ff1a1a 0 18px,transparent 18px 34px),
+    repeating-linear-gradient(180deg,#ff2f2f 0 18px,transparent 18px 34px),
+    repeating-linear-gradient(270deg,#ff4a4a 0 18px,transparent 18px 34px),
+    repeating-linear-gradient(0deg,#ff2525 0 18px,transparent 18px 34px)!important;
+  background-size:200% 3px,3px 200%,200% 3px,3px 200%!important;
+  background-repeat:no-repeat!important;
+  background-position:0 0,100% 0,100% 100%,0 100%!important;
+  animation:targetRowYellowBlinkV20 .78s steps(1,end) infinite,
+            targetRowSnakeV20 1.02s linear infinite!important;
+}
+tr.highlight-target::before,
+tr.highlight-target::after{display:none!important}
+
+@keyframes targetRowYellowBlinkV20{
+  0%,43%{
+    background-color:#ffeb00;
+    color:#241d00;
+    filter:brightness(1.18) saturate(1.75);
+  }
+  44%,100%{
+    background-color:transparent;
+    color:inherit;
+    filter:none;
+  }
+}
+@keyframes targetRowSnakeV20{
+  0%{background-position:0 0,100% 0,100% 100%,0 100%}
+  100%{background-position:200% 0,100% 200%,0 100%,0 0}
+}
+
+/* Hover no inicia ni altera la guía. */
+.highlight-target:hover{
+  outline:0!important;
+  box-shadow:none!important;
+}
+
+/* V21 · guía visual únicamente roja tipo "gusano".
+   Se elimina por completo el destello/parpadeo amarillo y se conserva
+   únicamente la línea roja luminosa que recorre el contorno. */
+.highlight-target{
+  background-color:inherit!important;
+  filter:none!important;
+  outline:0!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  animation:none!important;
+}
+.highlight-target::before{
+  display:none!important;
+  content:none!important;
+  animation:none!important;
+  background:none!important;
+  box-shadow:none!important;
+}
+.highlight-target::after{
+  display:block!important;
+}
+
+/* En filas <tr>, conservar solo el recorrido rojo por los cuatro lados. */
+tr.highlight-target{
+  background-color:transparent!important;
+  color:inherit!important;
+  filter:none!important;
+  outline:0!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  background-image:
+    repeating-linear-gradient(90deg,#ff1a1a 0 18px,transparent 18px 34px),
+    repeating-linear-gradient(180deg,#ff2f2f 0 18px,transparent 18px 34px),
+    repeating-linear-gradient(270deg,#ff4a4a 0 18px,transparent 18px 34px),
+    repeating-linear-gradient(0deg,#ff2525 0 18px,transparent 18px 34px)!important;
+  background-size:200% 3px,3px 200%,200% 3px,3px 200%!important;
+  background-repeat:no-repeat!important;
+  background-position:0 0,100% 0,100% 100%,0 100%!important;
+  animation:targetRowSnakeV20 1.02s linear infinite!important;
+}
+tr.highlight-target::before,
+tr.highlight-target::after{display:none!important}
+
+.highlight-target:hover{
+  background-color:inherit!important;
+  filter:none!important;
+  outline:0!important;
+  box-shadow:none!important;
+}
+
+/* V22 · En NavBar y barras laterales, la guía pasa a ser un cuadro rojo
+   estático, cuadrado y parpadeante. Se evita la línea parcial inferior y
+   se dibuja el contorno completo dentro del elemento para que siempre se vea. */
+@keyframes targetSquareBlinkV22{
+  0%,100%{
+    opacity:1;
+    box-shadow:
+      0 0 0 1px rgba(255,32,32,.95),
+      0 0 10px rgba(255,22,22,.95),
+      0 0 18px rgba(255,92,92,.65),
+      inset 0 0 6px rgba(255,32,32,.28);
+  }
+  50%{
+    opacity:.22;
+    box-shadow:
+      0 0 0 1px rgba(255,32,32,.55),
+      0 0 4px rgba(255,22,22,.35),
+      inset 0 0 2px rgba(255,32,32,.10);
+  }
+}
+
+.rail-item.highlight-target,
+.nav-row.highlight-target,
+.tree-link.highlight-target,
+.tree-title.highlight-target,
+.menu-head.highlight-target,
+.menu-search.highlight-target,
+.nav-breadcrumb.highlight-target,
+.back-btn.highlight-target,
+.nav-home-mini.highlight-target{
+  position:relative!important;
+  z-index:205!important;
+  overflow:visible!important;
+  isolation:isolate;
+  background-color:inherit!important;
+}
+
+.rail-item.highlight-target::before,
+.nav-row.highlight-target::before,
+.tree-link.highlight-target::before,
+.tree-title.highlight-target::before,
+.menu-head.highlight-target::before,
+.menu-search.highlight-target::before,
+.nav-breadcrumb.highlight-target::before,
+.back-btn.highlight-target::before,
+.nav-home-mini.highlight-target::before{
+  display:none!important;
+  content:none!important;
+}
+
+.rail-item.highlight-target::after,
+.nav-row.highlight-target::after,
+.tree-link.highlight-target::after,
+.tree-title.highlight-target::after,
+.menu-head.highlight-target::after,
+.menu-search.highlight-target::after,
+.nav-breadcrumb.highlight-target::after,
+.back-btn.highlight-target::after,
+.nav-home-mini.highlight-target::after{
+  content:"";
+  position:absolute;
+  inset:2px;
+  pointer-events:none;
+  z-index:4;
+  border:3px solid #ff2020;
+  border-radius:0!important;
+  background:transparent!important;
+  filter:none!important;
+  animation:targetSquareBlinkV22 .85s ease-in-out infinite!important;
+}
+
+.rail-item.highlight-target::after{inset:3px}
+.nav-row.highlight-target::after{inset:3px}
+.tree-link.highlight-target::after{inset:1px}
+.tree-title.highlight-target::after{inset:1px}
+.menu-head.highlight-target::after{inset:1px}
+.menu-search.highlight-target::after{inset:1px}
+.nav-breadcrumb.highlight-target::after{inset:3px}
+.back-btn.highlight-target::after,
+.nav-home-mini.highlight-target::after{inset:1px}
+
+/* Cuando la guía cae en filas normales de tabla, se conserva el efecto existente. */
+tr.highlight-target{
+  z-index:auto!important;
 }

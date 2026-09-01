@@ -148,6 +148,9 @@ const state = {
   enrollmentFilter: null,
   failedScheduleMode: null,
   assistantHidden: false,
+  assistantClickCount: 0,
+  assistantScale: 1,
+  assistantAltImage: false,
   dropSelection: [],
   dropBlockedCourseId: null
 };
@@ -195,7 +198,7 @@ function resetGame(){
   Object.assign(state,{
     screen:'dashboard', navOpen:false, navExpanded:false, navLevel:'root', guided:true,
     selectedCourse:null, selectedSection:null, selectedPractical:null, planner:[], schedules:{}, justEnrolled:null, attemptedTargetBlocked:false,
-    requirementsUploaded:null, assistantNotice:null, mixedConflictSeen:false, mixedVirtualConflictSeen:false, blockedCourseId:null, enrollmentFilter:null, failedScheduleMode:null, assistantHidden:false, dropSelection:[], dropBlockedCourseId:null
+    requirementsUploaded:null, assistantNotice:null, mixedConflictSeen:false, mixedVirtualConflictSeen:false, blockedCourseId:null, enrollmentFilter:null, failedScheduleMode:null, assistantHidden:false, assistantClickCount:0, assistantScale:1, assistantAltImage:false, dropSelection:[], dropBlockedCourseId:null
   });
   render();
 }
@@ -221,7 +224,7 @@ function chooseScenario(type){
     selectedCourse:null, selectedSection:null, selectedPractical:null,
     planner:[], schedules:presetSchedules, justEnrolled:null, attemptedTargetBlocked:false,
     requirementsUploaded:type==='change'?true:null, assistantNotice:null, mixedConflictSeen:false, mixedVirtualConflictSeen:false,
-    blockedCourseId:null, enrollmentFilter:null, failedScheduleMode:type==='failed'?null:'available', assistantHidden:false,
+    blockedCourseId:null, enrollmentFilter:null, failedScheduleMode:type==='failed'?null:'available', assistantHidden:false, assistantClickCount:0, assistantScale:1, assistantAltImage:false,
     dropSelection:[], dropBlockedCourseId:null
   });
   render();
@@ -398,8 +401,9 @@ function assistantContext(){
 
 function assistantWidget(){
   const info=assistantContext();
-  return `<section class="sae-assistant ${state.navOpen?'nav-open':''} ${state.assistantHidden?'assistant-hidden':''}" aria-live="polite">
-    <div class="sae-photo-wrap"><img class="sae-photo" src="assets/david_sae.png" alt="David Cruz de SAE"></div>
+  const assistantImage=state.assistantAltImage?'assets/david_sae_click5.png':'assets/david_sae.png';
+  return `<section class="sae-assistant ${state.navOpen?'nav-open':''} ${state.assistantHidden?'assistant-hidden':''}" style="--sae-scale:${state.assistantScale||1}" aria-live="polite">
+    <div class="sae-photo-wrap" onclick="assistantGrow(event)" title="En PC, haz clic en David para ampliar la guía"><img class="sae-photo" src="${assistantImage}" alt="David Cruz de SAE"></div>
     <div class="sae-bubble">
       <button class="sae-close" aria-label="Cerrar asistente" title="Cerrar por un momento" onclick="hideAssistant(event)">×</button>
       <div class="sae-title">${info.title}</div>
@@ -407,6 +411,38 @@ function assistantWidget(){
       ${info.actions?`<div class="assistant-actions">${info.actions}</div>`:''}
     </div>
   </section>`;
+}
+
+let assistantResetTimer=null;
+function assistantGrow(event){
+  event?.stopPropagation();
+  // Esta interacción es solo para escritorio. En móvil el asistente conserva su tamaño.
+  if(window.matchMedia('(max-width:760px)').matches) return;
+  if(state.assistantHidden) return;
+  if(assistantResetTimer){ clearTimeout(assistantResetTimer); assistantResetTimer=null; }
+
+  state.assistantClickCount=(state.assistantClickCount||0)+1;
+  state.assistantScale=Math.min(2, 1+(state.assistantClickCount*0.1));
+  if(state.assistantClickCount>=5) state.assistantAltImage=true;
+
+  const assistant=document.querySelector('.sae-assistant');
+  const photo=document.querySelector('.sae-photo');
+  if(assistant) assistant.style.setProperty('--sae-scale', String(state.assistantScale));
+  if(photo && state.assistantAltImage) photo.src='assets/david_sae_click5.png';
+
+  // Al llegar al 200 %, permanece un instante y vuelve al tamaño/foto originales.
+  if(state.assistantScale>=2){
+    assistantResetTimer=setTimeout(()=>{
+      state.assistantClickCount=0;
+      state.assistantScale=1;
+      state.assistantAltImage=false;
+      const currentAssistant=document.querySelector('.sae-assistant');
+      const currentPhoto=document.querySelector('.sae-photo');
+      if(currentAssistant) currentAssistant.style.setProperty('--sae-scale','1');
+      if(currentPhoto) currentPhoto.src='assets/david_sae.png';
+      assistantResetTimer=null;
+    },700);
+  }
 }
 
 function hideAssistant(event){
