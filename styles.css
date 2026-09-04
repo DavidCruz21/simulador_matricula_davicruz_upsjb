@@ -1113,3 +1113,225 @@ tr.highlight-target::after{display:none!important}
 tr.highlight-target{
   z-index:auto!important;
 }
+
+
+/* V26 · indicador amarillo brillante exacto #E2F511 */
+/* El color base de toda la guía visual es exactamente #E2F511. */
+.highlight-target::after{
+  background:conic-gradient(
+    from var(--snake-angle),
+    transparent 0deg 257deg,
+    rgba(226,245,17,.08) 268deg,
+    #E2F511 280deg,
+    #E2F511 296deg,
+    #E2F511 313deg,
+    #E2F511 325deg,
+    #E2F511 340deg,
+    transparent 354deg 360deg
+  )!important;
+  filter:
+    drop-shadow(0 0 2px #E2F511)
+    drop-shadow(0 0 6px rgba(226,245,17,1))
+    drop-shadow(0 0 10px rgba(226,245,17,.72))!important;
+}
+
+tr.highlight-target{
+  background-image:
+    repeating-linear-gradient(90deg,#E2F511 0 18px,transparent 18px 34px),
+    repeating-linear-gradient(180deg,#E2F511 0 18px,transparent 18px 34px),
+    repeating-linear-gradient(270deg,#E2F511 0 18px,transparent 18px 34px),
+    repeating-linear-gradient(0deg,#E2F511 0 18px,transparent 18px 34px)!important;
+}
+
+@keyframes targetSquareBlinkV26{
+  0%,100%{
+    opacity:1;
+    box-shadow:
+      0 0 0 1px #E2F511,
+      0 0 10px rgba(226,245,17,.98),
+      0 0 19px rgba(226,245,17,.72),
+      inset 0 0 6px rgba(226,245,17,.30);
+  }
+  50%{
+    opacity:.25;
+    box-shadow:
+      0 0 0 1px rgba(226,245,17,.65),
+      0 0 4px rgba(226,245,17,.40),
+      inset 0 0 2px rgba(226,245,17,.12);
+  }
+}
+
+.rail-item.highlight-target::after,
+.nav-row.highlight-target::after,
+.tree-link.highlight-target::after,
+.tree-title.highlight-target::after,
+.menu-head.highlight-target::after,
+.menu-search.highlight-target::after,
+.nav-breadcrumb.highlight-target::after,
+.back-btn.highlight-target::after,
+.nav-home-mini.highlight-target::after{
+  border-color:#E2F511!important;
+  animation:targetSquareBlinkV26 .85s ease-in-out infinite!important;
+}
+
+/* V27 · indicador amarillo neón de alta visibilidad */
+:root{--guide-neon:#F6FF00;--guide-neon-core:#FFFF00;--guide-neon-soft:rgba(246,255,0,.72)}
+
+/* Línea tipo gusano: amarillo neón más grueso y con halo visible. */
+.highlight-target::after{
+  padding:5px!important;
+  background:conic-gradient(
+    from var(--snake-angle),
+    transparent 0deg 248deg,
+    rgba(246,255,0,.10) 258deg,
+    #F6FF00 270deg,
+    #FFFF00 292deg,
+    #FFFFFF 306deg,
+    #FFFF00 320deg,
+    #F6FF00 342deg,
+    transparent 356deg 360deg
+  )!important;
+  filter:
+    drop-shadow(0 0 3px #FFFF00)
+    drop-shadow(0 0 7px #F6FF00)
+    drop-shadow(0 0 14px rgba(246,255,0,.95))
+    drop-shadow(0 0 22px rgba(246,255,0,.65))!important;
+}
+
+/* Filas de tablas: recorrido amarillo neón más ancho. */
+tr.highlight-target{
+  background-image:
+    repeating-linear-gradient(90deg,#FFFF00 0 22px,transparent 22px 38px),
+    repeating-linear-gradient(180deg,#F6FF00 0 22px,transparent 22px 38px),
+    repeating-linear-gradient(270deg,#FFFF00 0 22px,transparent 22px 38px),
+    repeating-linear-gradient(0deg,#F6FF00 0 22px,transparent 22px 38px)!important;
+  background-size:200% 5px,5px 200%,200% 5px,5px 200%!important;
+}
+
+/* NavBar y barras laterales: cuadro amarillo neón grueso y parpadeante. */
+@keyframes targetSquareBlinkV27{
+  0%,100%{
+    opacity:1;
+    border-color:#FFFF00;
+    box-shadow:
+      0 0 0 2px #F6FF00,
+      0 0 10px 3px rgba(255,255,0,1),
+      0 0 22px 7px rgba(246,255,0,.95),
+      0 0 36px 11px rgba(246,255,0,.55),
+      inset 0 0 8px rgba(255,255,0,.34);
+  }
+  50%{
+    opacity:.55;
+    border-color:#F6FF00;
+    box-shadow:
+      0 0 0 1px #F6FF00,
+      0 0 6px 2px rgba(246,255,0,.75),
+      0 0 13px 4px rgba(246,255,0,.45),
+      inset 0 0 4px rgba(246,255,0,.18);
+  }
+}
+
+.rail-item.highlight-target::after,
+.nav-row.highlight-target::after,
+.tree-link.highlight-target::after,
+.tree-title.highlight-target::after,
+.menu-head.highlight-target::after,
+.menu-search.highlight-target::after,
+.nav-breadcrumb.highlight-target::after,
+.back-btn.highlight-target::after,
+.nav-home-mini.highlight-target::after,
+.icon-btn.highlight-target::after,
+.tab.highlight-target::after,
+.action-button.highlight-target::after{
+  border:5px solid #FFFF00!important;
+  background:rgba(246,255,0,.035)!important;
+  animation:targetSquareBlinkV27 .72s ease-in-out infinite!important;
+}
+
+/* El icono superior (brújula) necesita halo extra sobre la barra azul. */
+.icon-btn.highlight-target{
+  overflow:visible!important;
+  isolation:isolate;
+}
+.icon-btn.highlight-target::after{
+  inset:2px!important;
+  z-index:8!important;
+}
+
+/* V28 · indicador morado fino, recuperando el grosor anterior */
+:root{
+  --guide-purple:#A100FF;
+  --guide-purple-bright:#C12BFF;
+}
+
+/* Línea tipo gusano: vuelve al grosor fino anterior, ahora en morado. */
+.highlight-target::after{
+  padding:3px!important;
+  background:conic-gradient(
+    from var(--snake-angle),
+    transparent 0deg 257deg,
+    rgba(161,0,255,.08) 268deg,
+    #7600FF 280deg,
+    #9200FF 296deg,
+    #B100FF 313deg,
+    #D04BFF 325deg,
+    #9B00FF 340deg,
+    transparent 354deg 360deg
+  )!important;
+  filter:
+    drop-shadow(0 0 2px #7600FF)
+    drop-shadow(0 0 6px rgba(177,0,255,.95))
+    drop-shadow(0 0 10px rgba(126,0,255,.62))!important;
+}
+
+/* Filas completas: recorrido morado fino. */
+tr.highlight-target{
+  background-image:
+    repeating-linear-gradient(90deg,#7600FF 0 18px,transparent 18px 34px),
+    repeating-linear-gradient(180deg,#9200FF 0 18px,transparent 18px 34px),
+    repeating-linear-gradient(270deg,#B100FF 0 18px,transparent 18px 34px),
+    repeating-linear-gradient(0deg,#8B00FF 0 18px,transparent 18px 34px)!important;
+  background-size:200% 3px,3px 200%,200% 3px,3px 200%!important;
+}
+
+/* NavBar y barras laterales: cuadro morado fino y parpadeante. */
+@keyframes targetSquareBlinkV28{
+  0%,100%{
+    opacity:1;
+    border-color:#A100FF;
+    box-shadow:
+      0 0 0 1px rgba(161,0,255,.92),
+      0 0 9px rgba(161,0,255,.82),
+      0 0 16px rgba(193,43,255,.50),
+      inset 0 0 5px rgba(161,0,255,.18);
+  }
+  50%{
+    opacity:.28;
+    border-color:#A100FF;
+    box-shadow:
+      0 0 0 1px rgba(161,0,255,.48),
+      0 0 4px rgba(161,0,255,.28),
+      inset 0 0 2px rgba(161,0,255,.08);
+  }
+}
+
+.rail-item.highlight-target::after,
+.nav-row.highlight-target::after,
+.tree-link.highlight-target::after,
+.tree-title.highlight-target::after,
+.menu-head.highlight-target::after,
+.menu-search.highlight-target::after,
+.nav-breadcrumb.highlight-target::after,
+.back-btn.highlight-target::after,
+.nav-home-mini.highlight-target::after,
+.icon-btn.highlight-target::after,
+.tab.highlight-target::after,
+.action-button.highlight-target::after{
+  border:3px solid #A100FF!important;
+  background:transparent!important;
+  animation:targetSquareBlinkV28 .85s ease-in-out infinite!important;
+}
+
+.icon-btn.highlight-target::after{
+  inset:2px!important;
+}

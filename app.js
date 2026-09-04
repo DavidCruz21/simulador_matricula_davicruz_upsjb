@@ -39,61 +39,162 @@ const PREREQ_TARGET_ID = 'M_R_SIS2202030101';
 const MIXED_BASE_ID = 'M_R_SIS2202020401';
 
 const initialCourses = [
-  {id:TARGET_ID, name:'PROGRAMACIÓN ORIENTADA A OBJETOS', credits:4, cycle:'02', status:'none'},
-
-  // Cuatro cursos del primer ciclo ya aprobados.
-  {id:'M_R_SIS2201010101', name:'MATEMÁTICA I', credits:4, cycle:'01', status:'done', grade:'15'},
-  {id:'M_R_SIS2201010201', name:'INTRODUCCIÓN A LA INGENIERÍA DE SISTEMAS', credits:3, cycle:'01', status:'done', grade:'16'},
+  // CICLO 01 · 5 cursos.
+  {id:'M_R_SIS2201010101', name:'MATEMÁTICA I', credits:5, cycle:'01', status:'done', grade:'15'},
+  {id:'M_R_SIS2201010201', name:'INTRODUCCIÓN A LA INGENIERÍA DE SISTEMAS', credits:2, cycle:'01', status:'done', grade:'16'},
   {id:'M_R_SIS2201010401', name:'COMUNICACIÓN Y REDACCIÓN ACADÉMICA', credits:3, cycle:'01', status:'done', grade:'14'},
-  {id:'M_R_SIS2201010501', name:'LÓGICA Y ALGORITMOS', credits:4, cycle:'01', status:'done', grade:'17'},
-
-  // Escenario de regularización: dos asignaturas desaprobadas de un ciclo inferior.
-  {id:'M_R_SIS2201010301', name:'FUNDAMENTOS DE PROGRAMACIÓN', credits:4, cycle:'01', status:'failed', grade:'', repeat:true},
+  {id:'M_R_SIS2201010301', name:'FUNDAMENTOS DE PROGRAMACIÓN', credits:6, cycle:'01', status:'failed', grade:'', repeat:true},
   {id:'M_R_SIS2201010601', name:'MATEMÁTICA DISCRETA I', credits:4, cycle:'01', status:'failed', grade:'', repeat:true},
 
-  {id:'M_R_SIS2202020201', name:'ESTRUCTURAS DISCRETAS', credits:4, cycle:'02', status:'none'},
-  {id:'M_R_SIS2202020301', name:'ARQUITECTURA DE COMPUTADORAS', credits:4, cycle:'02', status:'none'},
-  {id:'M_R_SIS2202020401', name:'BASES DE DATOS I', credits:4, cycle:'02', status:'none', previouslyFailed:true},
-  {id:'M_R_SIS2202030101', name:'ESTRUCTURAS DE DATOS Y ALGORITMOS', credits:4, cycle:'03', status:'none', prereqId:TARGET_ID},
-  {id:'M_R_SIS2202030201', name:'REDES DE COMPUTADORAS I', credits:4, cycle:'03', status:'none'},
-  {id:MIXED_COURSE_ID, name:'INGENIERÍA DE SOFTWARE I', credits:4, cycle:'04', status:'none', mixedExample:true}
+  // CICLO 02 · 5 cursos.
+  {id:MIXED_BASE_ID, name:'BASES DE DATOS I', credits:4, cycle:'02', status:'none', previouslyFailed:true},
+  {id:TARGET_ID, name:'PROGRAMACIÓN ORIENTADA A OBJETOS', credits:5, cycle:'02', status:'none'},
+  {id:'M_R_SIS2202020201', name:'ESTRUCTURAS DISCRETAS', credits:3, cycle:'02', status:'none'},
+  {id:'M_R_SIS2202020301', name:'ARQUITECTURA DE COMPUTADORAS', credits:6, cycle:'02', status:'none'},
+  {id:'M_R_SIS2202020501', name:'SISTEMAS OPERATIVOS I', credits:2, cycle:'02', status:'none'},
+
+  // CICLO 03 · 5 cursos.
+  {id:PREREQ_TARGET_ID, name:'ESTRUCTURAS DE DATOS Y ALGORITMOS', credits:6, cycle:'03', status:'none', prereqId:TARGET_ID},
+  {id:'M_R_SIS2202030201', name:'REDES DE COMPUTADORAS I', credits:3, cycle:'03', status:'none'},
+  {id:'M_R_SIS2202030301', name:'BASES DE DATOS II', credits:5, cycle:'03', status:'none', prereqId:MIXED_BASE_ID},
+  {id:'M_R_SIS2202030401', name:'SISTEMAS OPERATIVOS II', credits:4, cycle:'03', status:'none'},
+  {id:'M_R_SIS2202030501', name:'DESARROLLO WEB I', credits:2, cycle:'03', status:'none'},
+
+  // CICLO 04 · 5 cursos.
+  {id:MIXED_COURSE_ID, name:'INGENIERÍA DE SOFTWARE I', credits:5, cycle:'04', status:'none', mixedExample:true},
+  {id:'M_R_SIS2202040201', name:'REDES DE COMPUTADORAS II', credits:4, cycle:'04', status:'none'},
+  {id:'M_R_SIS2202040301', name:'DESARROLLO WEB II', credits:6, cycle:'04', status:'none'},
+  {id:'M_R_SIS2202040401', name:'ANÁLISIS Y DISEÑO DE SISTEMAS', credits:3, cycle:'04', status:'none'},
+  {id:'M_R_SIS2202040501', name:'GESTIÓN DE PROYECTOS DE TI', credits:2, cycle:'04', status:'none'},
+
+  // CICLO 99 · electivos. Se muestran más alternativas para utilizar créditos sobrantes.
+  {id:'M_R_ELE99CIB01', name:'CIBERSEGURIDAD APLICADA', credits:4, cycle:'99', status:'none', elective:true},
+  {id:'M_R_ELE99NUB02', name:'CLOUD COMPUTING', credits:3, cycle:'99', status:'none', elective:true},
+  {id:'M_R_ELE99IA003', name:'INTELIGENCIA ARTIFICIAL APLICADA', credits:5, cycle:'99', status:'none', elective:true},
+  {id:'M_R_ELE99DAT04', name:'INTRODUCCIÓN A CIENCIA DE DATOS', credits:4, cycle:'99', status:'none', elective:true},
+  {id:'M_R_ELE99DEV05', name:'DEVOPS Y CI/CD', credits:3, cycle:'99', status:'none', elective:true},
+  {id:'M_R_ELE99UX006', name:'DISEÑO UX/UI PARA SISTEMAS', credits:2, cycle:'99', status:'none', elective:true},
+  {id:'M_R_ELE99BLO07', name:'BLOCKCHAIN Y APLICACIONES DESCENTRALIZADAS', credits:6, cycle:'99', status:'none', elective:true},
+  {id:'M_R_ELE99IOT08', name:'INTERNET DE LAS COSAS', credits:5, cycle:'99', status:'none', elective:true}
 ];
 function buildCoursesForScenario(scenario){
-  let base=initialCourses.map(c=>({...c}));
-  if(scenario==='clean') return base.filter(c=>!c.repeat && !c.mixedExample);
+  const base=initialCourses.map(c=>({...c}));
+
+  // En los escenarios sin cursos jalados, los dos cursos que sirven para la
+  // demostración de regularización se consideran aprobados para conservar
+  // exactamente 5 cursos en el ciclo 01.
+  if(scenario!=='failed'){
+    base.forEach(c=>{
+      if(c.repeat){
+        c.status='done';
+        c.grade=c.id===FAILED_IDS[0]?'15':'14';
+      }
+    });
+  }
+
   if(scenario==='mixed'){
-    // En el caso de ciclos mezclados el alumno debe escoger primero el curso
-    // del ciclo inferior. No lo preinscribimos: se planifica antes de pasar
-    // al curso de cuarto ciclo para poder detectar cruces reales de horario.
-    base=base.filter(c=>!c.repeat);
+    // El alumno debe planificar primero BASES DE DATOS I (ciclo 02) y luego
+    // podrá pasar al curso de ciclo 04. Los cursos del mismo ciclo tienen
+    // franjas horarias distintas para no generar cruces entre sí.
     const lower=base.find(c=>c.id===MIXED_BASE_ID);
     if(lower) lower.status='none';
     return base;
   }
+
   if(scenario==='change'){
     // Caso especial: el alumno ya está inscrito y quiere cambiar de turno.
-    // Mostramos algunos cursos como inscritos; BASES DE DATOS I simula un
-    // curso que el alumno jaló anteriormente y que ahora está repitiendo.
-    base=base.filter(c=>!c.repeat && !c.mixedExample);
     const enrolledIds=[TARGET_ID, MIXED_BASE_ID, 'M_R_SIS2202030201'];
-    base.forEach(c=>{ c.status=enrolledIds.includes(c.id)?'enrolled':(c.status==='done'?'done':'none'); });
+    base.forEach(c=>{
+      if(enrolledIds.includes(c.id)) c.status='enrolled';
+      else if(c.status!=='done') c.status='none';
+    });
     return base;
   }
-  return base.filter(c=>!c.mixedExample);
+
+  if(scenario==='clean') return base;
+  return base;
 }
 let courses = buildCoursesForScenario('failed');
 
-const sections = [
-  {id:'0001-TEO', classNo:'2101', campus:'FILIAL ICA', room:'LAB. CÓMPUTO B-201', day:'Lun', start:'7:00PM', end:'8:30PM', teacher:'CARLOS RAMÍREZ', open:true, modality:'PRESENCIAL'},
-  {id:'0002-TEO', classNo:'2102', campus:'FILIAL ICA', room:'LAB. CÓMPUTO B-204', day:'Mié', start:'5:30PM', end:'7:00PM', teacher:'ANA TORRES', open:true, modality:'PRESENCIAL'},
-  {id:'0003-TEO', classNo:'2103', campus:'FILIAL ICA', room:'AULA B-207', day:'Sáb', start:'9:00AM', end:'10:30AM', teacher:'LUIS PAREDES', open:false, modality:'PRESENCIAL'}
+// Horarios base por curso. Cada curso del mismo ciclo recibe una franja distinta,
+// de modo que los ejemplos de un mismo ciclo nunca se crucen entre sí.
+const REGULAR_CYCLE_SLOTS = [
+  {day:'Lun', theoryStart:'7:00PM', theoryEnd:'8:30PM', practiceStart:'8:40PM', practiceEnd:'10:00PM'},
+  {day:'Mar', theoryStart:'7:00PM', theoryEnd:'8:30PM', practiceStart:'8:40PM', practiceEnd:'10:00PM'},
+  {day:'Mié', theoryStart:'7:00PM', theoryEnd:'8:30PM', practiceStart:'8:40PM', practiceEnd:'10:00PM'},
+  {day:'Jue', theoryStart:'7:00PM', theoryEnd:'8:30PM', practiceStart:'8:40PM', practiceEnd:'10:00PM'},
+  {day:'Vie', theoryStart:'7:00PM', theoryEnd:'8:30PM', practiceStart:'8:40PM', practiceEnd:'10:00PM'}
+];
+const ELECTIVE_SLOTS = [
+  {day:'Lun', theoryStart:'5:00PM', theoryEnd:'6:20PM', practiceStart:'6:30PM', practiceEnd:'7:50PM'},
+  {day:'Mar', theoryStart:'5:00PM', theoryEnd:'6:20PM', practiceStart:'6:30PM', practiceEnd:'7:50PM'},
+  {day:'Mié', theoryStart:'5:00PM', theoryEnd:'6:20PM', practiceStart:'6:30PM', practiceEnd:'7:50PM'},
+  {day:'Jue', theoryStart:'5:00PM', theoryEnd:'6:20PM', practiceStart:'6:30PM', practiceEnd:'7:50PM'},
+  {day:'Vie', theoryStart:'5:00PM', theoryEnd:'6:20PM', practiceStart:'6:30PM', practiceEnd:'7:50PM'},
+  {day:'Sáb', theoryStart:'8:00AM', theoryEnd:'9:20AM', practiceStart:'9:30AM', practiceEnd:'10:50AM'},
+  {day:'Sáb', theoryStart:'1:00PM', theoryEnd:'2:20PM', practiceStart:'2:30PM', practiceEnd:'3:50PM'},
+  {day:'Dom', theoryStart:'9:00AM', theoryEnd:'10:20AM', practiceStart:'10:30AM', practiceEnd:'11:50AM'}
 ];
 
-const practicalSections = [
-  {id:'0001-PRA', classNo:'3101', campus:'FILIAL ICA', room:'LAB. CÓMPUTO C-101', day:'Mar', start:'7:00PM', end:'8:30PM', teacher:'MARIO VEGA', open:true},
-  {id:'0002-PRA', classNo:'3102', campus:'FILIAL ICA', room:'LAB. CÓMPUTO C-103', day:'Jue', start:'5:30PM', end:'7:00PM', teacher:'SOFÍA NÚÑEZ', open:true},
-  {id:'0003-PRA', classNo:'3103', campus:'FILIAL ICA', room:'LAB. CÓMPUTO C-105', day:'Sáb', start:'10:45AM', end:'12:15PM', teacher:'DIEGO LEÓN', open:false}
-];
+const COURSE_SLOT_INDEX = {
+  // ciclo 01
+  'M_R_SIS2201010101':0,
+  'M_R_SIS2201010201':1,
+  'M_R_SIS2201010401':2,
+  'M_R_SIS2201010301':3,
+  'M_R_SIS2201010601':4,
+  // ciclo 02: BASES DE DATOS I queda el lunes para conservar el ejemplo de cruce con ciclo 04.
+  [MIXED_BASE_ID]:0,
+  [TARGET_ID]:1,
+  'M_R_SIS2202020201':2,
+  'M_R_SIS2202020301':3,
+  'M_R_SIS2202020501':4,
+  // ciclo 03
+  [PREREQ_TARGET_ID]:0,
+  'M_R_SIS2202030201':1,
+  'M_R_SIS2202030301':2,
+  'M_R_SIS2202030401':3,
+  'M_R_SIS2202030501':4,
+  // ciclo 04
+  [MIXED_COURSE_ID]:0,
+  'M_R_SIS2202040201':1,
+  'M_R_SIS2202040301':2,
+  'M_R_SIS2202040401':3,
+  'M_R_SIS2202040501':4,
+  // ciclo 99
+  'M_R_ELE99CIB01':0,
+  'M_R_ELE99NUB02':1,
+  'M_R_ELE99IA003':2,
+  'M_R_ELE99DAT04':3,
+  'M_R_ELE99DEV05':4,
+  'M_R_ELE99UX006':5,
+  'M_R_ELE99BLO07':6,
+  'M_R_ELE99IOT08':7
+};
+
+function scheduleSlotFor(course){
+  const index=COURSE_SLOT_INDEX[course?.id] ?? 0;
+  const slots=course?.cycle==='99'?ELECTIVE_SLOTS:REGULAR_CYCLE_SLOTS;
+  return slots[index % slots.length];
+}
+function generatedTheorySections(course){
+  const slot=scheduleSlotFor(course);
+  const code=String((COURSE_SLOT_INDEX[course?.id] ?? 0)+1).padStart(2,'0');
+  return [
+    {id:`${code}01-TEO`, classNo:`2${code}1`, campus:'FILIAL ICA', room:`AULA B-${201+(COURSE_SLOT_INDEX[course?.id]??0)}`, day:slot.day, start:slot.theoryStart, end:slot.theoryEnd, teacher:'CARLOS RAMÍREZ', open:true, modality:'PRESENCIAL'},
+    {id:`${code}02-TEO`, classNo:`2${code}2`, campus:'SEDE LIMA SUR', room:'AULA VIRTUAL', day:slot.day, start:slot.theoryStart, end:slot.theoryEnd, teacher:'ANA TORRES', open:true, modality:'VIRTUAL'},
+    {id:`${code}03-TEO`, classNo:`2${code}3`, campus:'SEDE CHINCHA', room:'AULA VIRTUAL', day:slot.day, start:slot.theoryStart, end:slot.theoryEnd, teacher:'LUIS PAREDES', open:false, modality:'VIRTUAL'}
+  ];
+}
+function generatedPracticalSections(course){
+  const slot=scheduleSlotFor(course);
+  const code=String((COURSE_SLOT_INDEX[course?.id] ?? 0)+1).padStart(2,'0');
+  return [
+    {id:`${code}01-PRA`, classNo:`3${code}1`, campus:'FILIAL ICA', room:`LAB. CÓMPUTO C-${101+(COURSE_SLOT_INDEX[course?.id]??0)}`, day:slot.day, start:slot.practiceStart, end:slot.practiceEnd, teacher:'MARIO VEGA', open:true},
+    {id:`${code}02-PRA`, classNo:`3${code}2`, campus:'SEDE LIMA SUR', room:'LAB. VIRTUAL', day:slot.day, start:slot.practiceStart, end:slot.practiceEnd, teacher:'SOFÍA NÚÑEZ', open:true},
+    {id:`${code}03-PRA`, classNo:`3${code}3`, campus:'SEDE CHINCHA', room:'LAB. VIRTUAL', day:slot.day, start:slot.practiceStart, end:slot.practiceEnd, teacher:'DIEGO LEÓN', open:false}
+  ];
+}
 
 const mixedTheorySections = [
   {id:'ISW-P01', classNo:'4101', campus:'FILIAL ICA', room:'AULA B-202', day:'Lun', start:'7:00PM', end:'8:30PM', teacher:'CARLOS RUIZ', open:true, modality:'PRESENCIAL'},
@@ -118,12 +219,12 @@ function isFailedClosedCase(course){ return state.scenario==='failed' && state.f
 function theorySectionsFor(course){
   if(course?.id===MIXED_COURSE_ID) return mixedTheorySections;
   if(isFailedClosedCase(course)) return failedClosedTheorySections;
-  return sections;
+  return generatedTheorySections(course);
 }
 function practicalSectionsFor(course){
   if(course?.id===MIXED_COURSE_ID) return mixedPracticalSections;
   if(isFailedClosedCase(course)) return failedClosedPracticalSections;
-  return practicalSections;
+  return generatedPracticalSections(course);
 }
 
 const state = {
@@ -152,7 +253,8 @@ const state = {
   assistantScale: 1,
   assistantAltImage: false,
   dropSelection: [],
-  dropBlockedCourseId: null
+  dropBlockedCourseId: null,
+  creditLimitAlert: false
 };
 
 function icon(name, cls='') {
@@ -179,6 +281,46 @@ function regularizationComplete(){ return pendingFailedCourses().length===0; }
 function plannerHas(id){ return state.planner.some(c=>c.id===id); }
 function safeId(id){ return id.replace(/[^a-zA-Z0-9_-]/g,'_'); }
 
+
+// Límite de créditos: se toma del total de créditos del ciclo regular inferior
+// que aún corresponde cursar. El ciclo 99 (electivos) consume créditos, pero
+// no se utiliza para definir el límite.
+function creditLimitInfo(){
+  const regular=courses.filter(c=>c.cycle!=='99');
+  const pendingCycles=regular
+    .filter(c=>c.status!=='done')
+    .map(c=>Number(c.cycle))
+    .filter(Number.isFinite);
+  const baseCycle=pendingCycles.length
+    ? Math.min(...pendingCycles)
+    : Math.max(...regular.map(c=>Number(c.cycle)).filter(Number.isFinite));
+  const cycleKey=String(baseCycle).padStart(2,'0');
+  const limit=regular
+    .filter(c=>c.cycle===cycleKey)
+    .reduce((sum,c)=>sum+Number(c.credits||0),0);
+  return {cycle:cycleKey,limit};
+}
+function currentCreditLoad(excludeId=null){
+  return courses
+    .filter(c=>c.id!==excludeId && ['planned','enrolled'].includes(c.status))
+    .reduce((sum,c)=>sum+Number(c.credits||0),0);
+}
+function wouldExceedCreditLimit(course){
+  const info=creditLimitInfo();
+  const projected=currentCreditLoad(course?.id)+Number(course?.credits||0);
+  return {...info,projected,exceeded:projected>info.limit};
+}
+function showCreditLimitExceeded(){
+  state.assistantNotice=null;
+  state.creditLimitAlert=true;
+  render();
+}
+
+function creditLimitInlineWarning(){
+  if(!state.creditLimitAlert) return '';
+  return `<div style="margin:10px 0 16px;color:#d31616;font-weight:700;font-size:15px;">Has excedido tu límite de créditos.</div>`;
+}
+
 function toast(msg){
   toastEl.textContent = msg;
   toastEl.classList.add('show');
@@ -187,7 +329,7 @@ function toast(msg){
   if(assistantText) assistantText.textContent = msg;
   setTimeout(()=>toastEl.classList.remove('show'),1900);
 }
-function clearAssistantNotice(){ state.assistantNotice=null; }
+function clearAssistantNotice(){ state.assistantNotice=null; state.creditLimitAlert=false; }
 
 // La guía V7 no muestra mensajes ni paneles: solo ilumina el siguiente control útil.
 function advance(){ /* compatibilidad con llamadas de versiones anteriores */ }
@@ -198,7 +340,7 @@ function resetGame(){
   Object.assign(state,{
     screen:'dashboard', navOpen:false, navExpanded:false, navLevel:'root', guided:true,
     selectedCourse:null, selectedSection:null, selectedPractical:null, planner:[], schedules:{}, justEnrolled:null, attemptedTargetBlocked:false,
-    requirementsUploaded:null, assistantNotice:null, mixedConflictSeen:false, mixedVirtualConflictSeen:false, blockedCourseId:null, enrollmentFilter:null, failedScheduleMode:null, assistantHidden:false, assistantClickCount:0, assistantScale:1, assistantAltImage:false, dropSelection:[], dropBlockedCourseId:null
+    requirementsUploaded:null, assistantNotice:null, mixedConflictSeen:false, mixedVirtualConflictSeen:false, blockedCourseId:null, enrollmentFilter:null, failedScheduleMode:null, assistantHidden:false, assistantClickCount:0, assistantScale:1, assistantAltImage:false, dropSelection:[], dropBlockedCourseId:null, creditLimitAlert:false
   });
   render();
 }
@@ -225,7 +367,7 @@ function chooseScenario(type){
     planner:[], schedules:presetSchedules, justEnrolled:null, attemptedTargetBlocked:false,
     requirementsUploaded:type==='change'?true:null, assistantNotice:null, mixedConflictSeen:false, mixedVirtualConflictSeen:false,
     blockedCourseId:null, enrollmentFilter:null, failedScheduleMode:type==='failed'?null:'available', assistantHidden:false, assistantClickCount:0, assistantScale:1, assistantAltImage:false,
-    dropSelection:[], dropBlockedCourseId:null
+    dropSelection:[], dropBlockedCourseId:null, creditLimitAlert:false
   });
   render();
 }
@@ -278,6 +420,13 @@ function dashboard(){
 }
 
 function assistantContext(){
+  if(state.creditLimitAlert){
+    return {
+      title:'David · SAE',
+      message:'Has excedido el límite de créditos permitido para tu matrícula. Puedes revisar los créditos que corresponden a tu plan de estudios en <a href="https://www.upsjb.edu.pe/transparencia/mallas-curriculares/" target="_blank" rel="noopener noreferrer" style="color:#075e88;font-weight:bold;text-decoration:underline">Mallas Curriculares | Universidad Privada San Juan Bautista</a>. Si necesitas orientación, comunícate con SAE.',
+      actions:''
+    };
+  }
   if(state.assistantNotice) return {title:'David · SAE', message:state.assistantNotice, actions:''};
 
   if(state.screen==='dashboard' && !state.scenario){
@@ -618,7 +767,8 @@ function coursesPage(){
     '01': courses.filter(c=>c.cycle==='01'),
     '02': courses.filter(c=>c.cycle==='02'),
     '03': courses.filter(c=>c.cycle==='03'),
-    '04': courses.filter(c=>c.cycle==='04')
+    '04': courses.filter(c=>c.cycle==='04'),
+    '99': courses.filter(c=>c.cycle==='99')
   };
   if(state.scenario==='mixed'){
     // En el ejemplo de ciclos diferentes, BASES DE DATOS I se muestra primero
@@ -643,6 +793,7 @@ function coursesPage(){
       ${cycleBlock('CICLO 02 PLAN DE ESTUDIO 20201',grouped['02'])}
       ${cycleBlock('CICLO 03 PLAN DE ESTUDIO 20201',grouped['03'])}
       ${grouped['04'].length?cycleBlock('CICLO 04 PLAN DE ESTUDIO 20201',grouped['04']):''}
+      ${grouped['99'].length?cycleBlock('CICLO 99 · CURSOS ELECTIVOS',grouped['99']):''}
     </div>
   `, 'Mis Condiciones Académicas', 'inicio');
 }
@@ -680,6 +831,7 @@ function courseModal(){
       <h2 class="detail-title">Detalle Curso</h2>
       <a id="backConditionsLink" class="back-link" href="javascript:void(0)" onclick="backFromCourse()">Volver a Mis Condiciones Académicas</a>
       <div class="detail-name">${c.id} - ${c.name}</div>
+      ${creditLimitInlineWarning()}
       ${repeatNotice}
       <div class="detail-grid no-callout">
         <div class="info-block"><div class="info-head">Detalle Curso</div><div class="detail-text">
@@ -835,6 +987,7 @@ function enrollReviewPage(){
     <div class="page-heading-row"><h1 class="section-title compact-title">Inscribir Clases</h1><div class="step-indicator"><span class="step active">1</span><span class="step">2</span><span class="step">3</span></div></div>
     <section class="enrollment-panel enroll-confirm-panel">
       <h2>1. Selección de clases para inscribir</h2>
+      ${creditLimitInlineWarning()}
       <p>Revisa tus cursos planificados. Puedes eliminar cualquiera antes de continuar.</p>
       <p class="term-line"><b>${STUDENT.term} | ${STUDENT.career} | ${STUDENT.institution}</b></p>
       <div class="mini-box"><table class="course-table"><thead><tr><th>Curso</th><th>Descripción</th><th>Teoría</th><th>Práctica</th><th>Unidades</th><th>Estado</th><th>Eliminar</th></tr></thead><tbody>${rows||'<tr><td colspan="7">No hay cursos planificados.</td></tr>'}</tbody></table></div>
@@ -856,6 +1009,7 @@ function dropPage(){
     <section class="enrollment-panel">
       <h2>1. Clases para Baja</h2>
       <p>Selecciona las clases en las que deseas causar baja y pulsa “Baja Clases Seleccionadas”.</p>
+      <div class="requirements-warning"><b>Importante:</b> debes mantener por lo menos <b>un curso inscrito</b>. El sistema no permitirá dar de baja todos los cursos del ciclo.</div>
       <p class="term-line"><b>${STUDENT.term} | ${STUDENT.career} | ${STUDENT.institution}</b></p>
       <div class="mini-box"><table class="course-table drop-table"><thead><tr><th>Selección</th><th>Clase</th><th>Descripción</th><th>Días/Horas</th><th>Aula</th><th>Instructor</th><th>Unidades</th><th>Estado</th></tr></thead><tbody>${rows||'<tr><td colspan="8">No hay clases inscritas.</td></tr>'}</tbody></table></div>
       <div class="footer-actions"><button class="action-button" onclick="openEnrollStep()">Volver</button><button id="dropSelectedBtn" class="action-button primary" ${state.dropSelection.length?'':'disabled'} onclick="prepareDrop()">Baja Clases Seleccionadas</button></div>
@@ -910,6 +1064,7 @@ function enrollPage(){
     <div class="page-heading-row"><h1 class="section-title compact-title">Inscribir Clases</h1><div class="step-indicator"><span class="step">1</span><span class="step active">2</span><span class="step">3</span></div></div>
     <section class="enrollment-panel enroll-confirm-panel">
       <h2>2. Confirmación de clases</h2>
+      ${creditLimitInlineWarning()}
       <p>${regularizationMode?'Confirma primero la inscripción de los cursos pendientes de ciclos inferiores. El curso de ciclo superior que ya planificaste permanecerá en tu Planificador.':state.enrollmentFilter?'Este curso debe inscribirse primero porque es prerrequisito de otra asignatura que dejaste en el Planificador.':'Los cursos están en tu Planificador. Confirma la inscripción para registrarlos en el ciclo '+STUDENT.term+'.'}</p>
       <p class="term-line"><b>${STUDENT.term} | ${STUDENT.career} | ${STUDENT.institution}</b></p>
       <div class="mini-box"><table class="course-table"><thead><tr><th>Curso</th><th>Descripción</th><th>Teoría</th><th>Práctica</th><th>Unidades</th><th>Estado actual</th></tr></thead><tbody>${rows}</tbody></table></div>
@@ -1069,6 +1224,10 @@ function planSelectedCourse(){
   }
   if(!state.selectedSection){ toast('Primero selecciona una clase teórica'); return; }
   if(!state.selectedPractical){ toast('Ahora selecciona la clase práctica obligatoria'); return; }
+  if(wouldExceedCreditLimit(c).exceeded){
+    showCreditLimitExceeded();
+    return;
+  }
   c.status='planned';
   state.schedules[c.id]={theory:{...state.selectedSection},practical:{...state.selectedPractical}};
   if(!plannerHas(c.id)) state.planner.push(c);
@@ -1095,8 +1254,13 @@ function schedulesOverlap(a,b){
   return parseMinutes(a.start)<parseMinutes(b.end) && parseMinutes(b.start)<parseMinutes(a.end);
 }
 function findScheduleConflict(sec,currentId){
+  const currentCourse=courses.find(c=>c.id===currentId);
   for(const c of courses){
     if(c.id===currentId || !['planned','enrolled'].includes(c.status)) continue;
+    // En este simulador los cursos de un mismo ciclo se programan en bloques
+    // distintos. Como medida adicional, nunca se reporta un cruce entre dos
+    // cursos del mismo ciclo; los cruces didácticos se reservan para ciclos distintos.
+    if(currentCourse && c.cycle===currentCourse.cycle) continue;
     const sch=state.schedules[c.id]; if(!sch) continue;
     if(schedulesOverlap(sec,sch.theory)||schedulesOverlap(sec,sch.practical)) return c;
   }
@@ -1176,6 +1340,10 @@ function continueEnrollment(){
   if(state.requirementsUploaded!==true){ toast('Primero debes subir tus requisitos al Intranet'); return; }
   const planned=state.planner.filter(c=>c.status==='planned');
   if(!planned.length){ toast('No hay cursos planificados para continuar'); return; }
+  if(currentCreditLoad()>creditLimitInfo().limit){
+    showCreditLimitExceeded();
+    return;
+  }
   state.enrollmentFilter=null;
   if(state.scenario==='failed' && pendingFailedCourses().length){
     if(targetCourse()?.status==='planned') state.attemptedTargetBlocked=true;
@@ -1205,8 +1373,20 @@ function openDropStep(){
   state.screen='drop'; render();
 }
 function toggleDropCourse(id,checked){
-  if(checked){ if(!state.dropSelection.includes(id)) state.dropSelection.push(id); }
-  else state.dropSelection=state.dropSelection.filter(x=>x!==id);
+  const enrolled=enrolledCourses();
+  if(checked){
+    const nextSelection=new Set([...state.dropSelection,id]);
+    // Debe quedar como mínimo un curso inscrito en el ciclo.
+    if(enrolled.length-nextSelection.size<1){
+      const input=document.getElementById(`dropCheck_${safeId(id)}`);
+      if(input) input.checked=false;
+      toast('Debes mantener por lo menos un curso inscrito. No puedes dar de baja todos los cursos del ciclo.');
+      return;
+    }
+    if(!state.dropSelection.includes(id)) state.dropSelection.push(id);
+  } else {
+    state.dropSelection=state.dropSelection.filter(x=>x!==id);
+  }
   const btn=document.getElementById('dropSelectedBtn'); if(btn) btn.disabled=!state.dropSelection.length;
   clearHighlights();
   setTimeout(applyGuide,0);
@@ -1214,6 +1394,10 @@ function toggleDropCourse(id,checked){
 function prepareDrop(){
   clearAssistantNotice();
   if(!state.dropSelection.length){ toast('Selecciona al menos un curso para la baja'); return; }
+  if(enrolledCourses().length-state.dropSelection.length<1){
+    toast('Debes mantener por lo menos un curso inscrito. Retira una clase de la selección de baja.');
+    return;
+  }
   const protectedCourse=state.dropSelection.map(id=>courses.find(c=>c.id===id)).find(c=>c?.previouslyFailed);
   if(protectedCourse){
     state.dropBlockedCourseId=protectedCourse.id;
@@ -1223,6 +1407,12 @@ function prepareDrop(){
 }
 function finalizeDrop(){
   clearAssistantNotice();
+  if(enrolledCourses().length-state.dropSelection.length<1){
+    toast('La baja no puede dejarte sin cursos inscritos. Debes conservar al menos uno.');
+    state.screen='drop';
+    render();
+    return;
+  }
   const ids=new Set(state.dropSelection);
   ids.forEach(id=>{
     const c=courses.find(x=>x.id===id);
@@ -1237,6 +1427,10 @@ function finalizeDrop(){
 function finishEnrollment(){
   clearAssistantNotice();
   if(state.requirementsUploaded!==true){ toast('Primero debes subir tus requisitos al Intranet'); return; }
+  if(currentCreditLoad()>creditLimitInfo().limit){
+    showCreditLimitExceeded();
+    return;
+  }
   if(state.scenario==='failed' && pendingFailedCourses().length){
     const unplanned=failedUnplannedCourses();
     if(unplanned.length){ state.screen='enrollBlocked'; render(); return; }
